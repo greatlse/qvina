@@ -101,7 +101,7 @@ void subtract_change(Change& b, const Change& a, sz n) { // b -= a
 //}
 //// N.B. y = individual numbers, f = function= y(x), g = delta f = first order derivative
 template<typename F, typename Conf, typename Change>
-fl bfgs(F& f, Conf& x, Change& g, const unsigned max_steps, const fl average_required_improvement, const sz over) { // x is I/O, final value is returned
+fl bfgs(F& f, Conf& x, Change& g, const unsigned max_steps, const fl average_required_improvement, const sz over, visited* tried) { // x is I/O, final value is returned
 
 //	::print(f.v);printf("\n");
 //	printf("XOUYANG %lf\n",f.v[0]);
@@ -115,16 +115,20 @@ fl bfgs(F& f, Conf& x, Change& g, const unsigned max_steps, const fl average_req
 	Conf x_new(x);
 
 
+
 	fl f0 = f(x, g); //evaluate the derivative of conf x in change g, and returns the the function value in f0
 
 //	printf("%f\t",f0);
 //	printf("Amr\t X : "); outputFlv.clear(); x.getV(outputFlv);::print(outputFlv); printf("\n");
 
 
-	if (!(f.m->tried.interesting(x, f0, g))) {
-		return f0;
+	if(tried){
+		if (!(/*f.m->*/tried->interesting(x, f0, g))) {
+			return f0;
+		}else{
+			/*f.m->*/tried->add(x, f0, g);
+		}
 	}
-	f.m->tried.add(x, f0, g);
 
 
 	fl f_orig = f0;
@@ -157,7 +161,9 @@ fl bfgs(F& f, Conf& x, Change& g, const unsigned max_steps, const fl average_req
   	 	}
 
 		bool h_updated = bfgs_update(h, p, y, alpha);//updates h only
-		f.m->tried.add(x, f0, g);
+		if (tried) {
+			/*f.m->*/tried->add(x, f0, g);
+		}
  	}
 	if(!(f0 <= f_orig)) { // succeeds for nans too
 		f0 = f_orig;

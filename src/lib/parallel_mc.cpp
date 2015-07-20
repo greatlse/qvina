@@ -29,7 +29,8 @@ struct parallel_mc_task {
 	model m;
 	output_container out;
 	rng generator;
-	parallel_mc_task(const model& m_, int seed) : m(m_), generator(static_cast<rng::result_type>(seed)) {}
+	visited* tried;
+	parallel_mc_task(const model& m_, int seed, visited* visited_) : m(m_), generator(static_cast<rng::result_type>(seed)), tried(visited_) {}
 };
 
 typedef boost::ptr_vector<parallel_mc_task> parallel_mc_task_container;
@@ -46,7 +47,7 @@ struct parallel_mc_aux {
 	parallel_mc_aux(const monte_carlo* mc_, const precalculate* p_, const igrid* ig_, const precalculate* p_widened_, const igrid* ig_widened_, const vec* corner1_, const vec* corner2_, parallel_progress* pg_)
 		: mc(mc_), p(p_), ig(ig_), p_widened(p_widened_), ig_widened(ig_widened_), corner1(corner1_), corner2(corner2_), pg(pg_) {}
 	void operator()(parallel_mc_task& t) const {
-		(*mc)(t.m, t.out, *p, *ig, *p_widened, *ig_widened, *corner1, *corner2, pg, t.generator);
+		(*mc)(t.m, t.out, *p, *ig, *p_widened, *ig_widened, *corner1, *corner2, pg, t.generator, t.tried);
 	}
 };
 
@@ -67,7 +68,8 @@ void parallel_mc::operator()(const model& m, output_container& out, const precal
 	parallel_mc_aux parallel_mc_aux_instance(&mc, &p, &ig, &p_widened, &ig_widened, &corner1, &corner2, (display_progress ? (&pp) : NULL));
 	parallel_mc_task_container task_container;
 	VINA_FOR(i, num_tasks)
-		task_container.push_back(new parallel_mc_task(m, random_int(0, 1000000, generator)));
+		task_container.push_back(new parallel_mc_task(m, random_int(0, 1000000, generator), new visited()));
+
 	if(display_progress) 
 		pp.init(num_tasks * mc.num_steps);
 	parallel_iter<parallel_mc_aux, parallel_mc_task_container, parallel_mc_task, true> parallel_iter_instance(&parallel_mc_aux_instance, num_threads);

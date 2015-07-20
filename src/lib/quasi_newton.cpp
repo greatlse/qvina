@@ -29,15 +29,16 @@ struct quasi_newton_aux {
 	const igrid* ig;
 	const vec v;
 	quasi_newton_aux(model* m_, const precalculate* p_, const igrid* ig_, const vec& v_) : m(m_), p(p_), ig(ig_), v(v_) {}
-	fl operator()(const conf& c, change& g) {//returns the derivatives in g and the f in return vlue
+	fl operator()(const conf& c, change& g) {//returns the derivatives in g and the f in return value
 		const fl tmp = m->eval_deriv(*p, *ig, v, c, g);
 		return tmp;
 	}
 };
 
-void quasi_newton::operator()(model& m, const precalculate& p, const igrid& ig, output_type& out, change& g, const vec& v) const { // g must have correct size
+void quasi_newton::operator()(model& m, const precalculate& p, const igrid& ig, output_type& out, change& g, const vec& v, visited* tried) const { // g must have correct size
 	quasi_newton_aux aux(&m, &p, &ig, v);
-	fl res = bfgs(aux, out.c, g, max_steps, average_required_improvement, 10);
+//	std::cout<<"quasi_newton::operator()\n";
+	fl res = bfgs(aux, out.c, g, max_steps, average_required_improvement, 10, tried);
 	out.e = res;
 }
 
